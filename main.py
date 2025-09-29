@@ -1,16 +1,27 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
 import numpy as np
 import pandas as pd
 
-# Load the dictionary
+# Load the model
 model = joblib.load("models/model.joblib")
 THRESHOLD = 0.3
+
 # Initialize FastAPI app
 app = FastAPI()
 
-# Input schema (raw features as they appear before preprocessing)
+# ✅ Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can restrict this to ["http://localhost:5173"] later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Input schema
 class CustomerData(BaseModel):
     CreditScore: float
     Gender: int
@@ -27,10 +38,8 @@ class CustomerData(BaseModel):
 def home():
     return {"message": "Bank Customer Churn Prediction API is running!"}
 
-# Prediction endpoint
 @app.post("/predict")
 def predict(data: CustomerData):
-    # Convert input into DataFrame-like row (dict → array)
     X = pd.DataFrame([{
         "CreditScore": data.CreditScore,
         "Gender": data.Gender,
@@ -44,7 +53,6 @@ def predict(data: CustomerData):
         "Geography": data.Geography
     }])
 
-    # Pipeline handles preprocessing internally
     proba = model.predict_proba(X)[0][1]
     prediction = int(proba >= THRESHOLD)
 
