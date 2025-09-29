@@ -1,12 +1,7 @@
-function Footer() {
+export default function Footer() {
   return (
-    <footer className="bg-[#0C2E8A] text-white py-4 mt-8">
-      <div className="container mx-auto text-center text-sm">
-        © {new Date().getFullYear()} Bank Customer Churn Prediction — Built for
-        Interview
-      </div>
+    <footer className="bg-blue-900 text-white text-center py-4 mt-10">
+      <p>© {new Date().getFullYear()} BankChurn AI. All rights reserved.</p>
     </footer>
   );
 }
-
-export default Footer;

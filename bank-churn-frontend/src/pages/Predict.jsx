@@ -1,11 +1,12 @@
 import PredictionForm from "../components/PredictionForm";
 
-function Predict() {
+export default function Predict() {
   return (
-    <section className="py-12 px-6 bg-gray-50 min-h-screen">
+    <section className="container mx-auto py-12 px-6">
+      <h2 className="text-3xl font-bold text-blue-900 text-center mb-8">
+        Enter Customer Details
+      </h2>
       <PredictionForm />
     </section>
   );
 }
-
-export default Predict;

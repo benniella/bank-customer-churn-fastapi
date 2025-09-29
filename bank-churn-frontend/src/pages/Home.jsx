@@ -1,23 +1,20 @@
 import { Link } from "react-router-dom";
 
-function Home() {
+export default function Home() {
   return (
-    <section className="flex flex-col items-center justify-center text-center py-16 px-6 bg-gray-50">
-      <h1 className="text-4xl md:text-6xl font-bold text-[#0C2E8A] mb-6">
+    <section className="container mx-auto text-center py-20 px-6">
+      <h1 className="text-4xl font-bold text-blue-900 mb-4">
         Bank Customer Churn Prediction
       </h1>
-      <p className="text-lg md:text-xl text-gray-600 max-w-2xl mb-8">
-        Use machine learning to predict whether a customer will stay or leave. 
-        Enter customer details and get instant predictions.
+      <p className="text-lg text-gray-600 mb-8">
+        Predict whether a customer will leave the bank using our AI-powered tool.
       </p>
-      <Link 
-        to="/predict" 
-        className="bg-[#0C2E8A] text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-900 transition"
+      <Link
+        to="/predict"
+        className="px-6 py-3 bg-blue-900 text-white rounded-lg shadow-md hover:bg-blue-800 transition"
       >
         Get Started
       </Link>
     </section>
   );
 }
-
-export default Home;

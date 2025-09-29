@@ -1,17 +1,15 @@
-function About() {
+export default function About() {
   return (
-    <section className="py-16 px-6 max-w-3xl mx-auto text-center">
-      <h2 className="text-3xl font-bold text-[#0C2E8A] mb-4">About This Project</h2>
-      <p className="text-gray-600 text-lg mb-6">
-        This project demonstrates a machine learning model deployed with FastAPI 
-        to predict customer churn for a bank. The frontend is built with React 
-        and Tailwind CSS to provide a clean, modern interface.
+    <section className="container mx-auto py-12 px-6">
+      <h2 className="text-3xl font-bold text-blue-900 mb-4">About This Project</h2>
+      <p className="text-gray-600 mb-4">
+        This is a machine learning project that predicts whether a bank customer will churn.
+        It uses a FastAPI backend and a modern React + Tailwind frontend.
       </p>
-      <p className="text-gray-500">
-        Built by [Your Sister’s Name] for technical interview purposes.
+      <p className="text-gray-600">
+        Built to demonstrate technical skills in frontend development, API integration,
+        and user-friendly design.
       </p>
     </section>
   );
 }
-
-export default About;

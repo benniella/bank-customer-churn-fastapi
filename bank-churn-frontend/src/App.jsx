@@ -3,20 +3,20 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Predict from "./pages/Predict";
+import Results from "./components/ResultCard";
 import About from "./pages/About";
-import NotFound from "./pages/NotFound";
 
 function App() {
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-white text-gray-900">
         <Navbar />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/predict" element={<Predict />} />
+            <Route path="/results" element={<Results />} />
             <Route path="/about" element={<About />} />
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

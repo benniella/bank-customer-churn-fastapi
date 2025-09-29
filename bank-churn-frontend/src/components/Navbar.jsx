@@ -1,18 +1,19 @@
 import { Link } from "react-router-dom";
 
-function Navbar() {
+export default function Navbar() {
   return (
-    <nav className="bg-[#0C2E8A] text-white shadow-md">
+    <nav className="bg-blue-900 text-white shadow-md">
       <div className="container mx-auto flex justify-between items-center py-4 px-6">
-        <Link to="/" className="text-xl font-bold">Churn Predictor</Link>
+        <Link to="/" className="text-2xl font-bold tracking-wide">
+          BankChurn AI
+        </Link>
         <div className="space-x-6">
-          <Link to="/" className="hover:text-gray-300">Home</Link>
-          <Link to="/predict" className="hover:text-gray-300">Predict</Link>
-          <Link to="/about" className="hover:text-gray-300">About</Link>
+          <Link to="/" className="hover:text-gray-200">Home</Link>
+          <Link to="/predict" className="hover:text-gray-200">Predict</Link>
+          <Link to="/results" className="hover:text-gray-200">Results</Link>
+          <Link to="/about" className="hover:text-gray-200">About</Link>
         </div>
       </div>
     </nav>
   );
 }
-
-export default Navbar;
