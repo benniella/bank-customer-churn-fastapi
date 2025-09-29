@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const PredictionForm = () => {
+function PredictionForm({ setPrediction }) {
   const [formData, setFormData] = useState({
     CreditScore: "",
     Gender: "",
@@ -16,25 +16,40 @@ const PredictionForm = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [prediction, setPrediction] = useState(null);
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setPrediction(null);
 
+    const payload = {
+      CreditScore: Number(formData.CreditScore),
+      Gender: Number(formData.Gender),
+      Age: Number(formData.Age),
+      Tenure: Number(formData.Tenure),
+      Balance: parseFloat(formData.Balance),
+      NumOfProducts: Number(formData.NumOfProducts),
+      HasCrCard: Number(formData.HasCrCard),
+      IsActiveMember: Number(formData.IsActiveMember),
+      EstimatedSalary: parseFloat(formData.EstimatedSalary),
+      Geography: formData.Geography,
+    };
+
     try {
       const res = await axios.post(
         "https://bank-customer-churn-fastapi.onrender.com/predict",
-        formData
+        payload
       );
       setPrediction(res.data);
     } catch (error) {
+      console.error(error);
       setPrediction("Error: Could not get prediction");
     } finally {
       setLoading(false);
@@ -42,88 +57,104 @@ const PredictionForm = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-2xl p-8 border border-gray-100">
-      <h2 className="text-2xl font-bold text-blue-700 mb-6 text-center">
-        Bank Churn Prediction
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-3xl mx-auto"
+    >
+      <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
+        Bank Customer Churn Prediction
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Grid layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Credit Score */}
         <div>
-          <label className="block mb-2 font-medium">Credit Score</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Credit Score
+          </label>
           <input
             type="number"
             name="CreditScore"
             value={formData.CreditScore}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
-        {/* Gender Dropdown */}
+        {/* Gender */}
         <div>
-          <label className="block mb-2 font-medium">Gender</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Gender
+          </label>
           <select
             name="Gender"
             value={formData.Gender}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
-            <option value="">Select Gender</option>
-            <option value="0">Female</option>
+            <option value="">Select</option>
             <option value="1">Male</option>
+            <option value="0">Female</option>
           </select>
         </div>
 
         {/* Age */}
         <div>
-          <label className="block mb-2 font-medium">Age</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Age
+          </label>
           <input
             type="number"
             name="Age"
             value={formData.Age}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
         {/* Tenure */}
         <div>
-          <label className="block mb-2 font-medium">Tenure (years)</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Tenure (Years with Bank)
+          </label>
           <input
             type="number"
             name="Tenure"
             value={formData.Tenure}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
         {/* Balance */}
         <div>
-          <label className="block mb-2 font-medium">Balance</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Balance
+          </label>
           <input
             type="number"
             name="Balance"
             value={formData.Balance}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
-        {/* Number of Products */}
+        {/* Num of Products */}
         <div>
-          <label className="block mb-2 font-medium">Number of Products</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Number of Products
+          </label>
           <select
             name="NumOfProducts"
             value={formData.NumOfProducts}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select</option>
@@ -136,12 +167,14 @@ const PredictionForm = () => {
 
         {/* Has Credit Card */}
         <div>
-          <label className="block mb-2 font-medium">Has Credit Card</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Has Credit Card
+          </label>
           <select
             name="HasCrCard"
             value={formData.HasCrCard}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select</option>
@@ -152,12 +185,14 @@ const PredictionForm = () => {
 
         {/* Active Member */}
         <div>
-          <label className="block mb-2 font-medium">Active Member</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Active Member
+          </label>
           <select
             name="IsActiveMember"
             value={formData.IsActiveMember}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select</option>
@@ -166,81 +201,60 @@ const PredictionForm = () => {
           </select>
         </div>
 
-        {/* Estimated Salary */}
+        {/* Salary */}
         <div>
-          <label className="block mb-2 font-medium">Estimated Salary</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Estimated Salary
+          </label>
           <input
             type="number"
             name="EstimatedSalary"
             value={formData.EstimatedSalary}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
         {/* Geography */}
         <div>
-          <label className="block mb-2 font-medium">Geography</label>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Geography
+          </label>
           <select
             name="Geography"
             value={formData.Geography}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             required
           >
-            <option value="">Select Country</option>
+            <option value="">Select</option>
             <option value="France">France</option>
             <option value="Spain">Spain</option>
             <option value="Germany">Germany</option>
           </select>
         </div>
+      </div>
 
-        {/* Submit */}
+      {/* Submit button */}
+      <div className="mt-8 flex justify-center">
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
           disabled={loading}
+          className="px-6 py-3 w-full md:w-auto bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition disabled:opacity-50"
         >
           {loading ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="animate-spin h-5 w-5 mr-2 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                ></path>
-              </svg>
-              Predicting...
-            </span>
+            <div className="flex items-center justify-center space-x-2">
+              <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+              <span>Predicting...</span>
+            </div>
           ) : (
-            "Predict"
+            "Get Prediction"
           )}
         </button>
-      </form>
-
-      {/* Result */}
-      {prediction && (
-        <div className="mt-6 text-center">
-          <h3 className="text-lg font-bold text-gray-800">Result</h3>
-          <p className="mt-2 text-blue-600 font-semibold">{prediction}</p>
-        </div>
-      )}
-    </div>
+      </div>
+    </form>
   );
-};
+}
 
 export default PredictionForm;
