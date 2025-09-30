@@ -3,22 +3,22 @@ name: Deploy Vite + Tailwind to cPanel Subdomain
 on:
   push:
     branches:
-      - main # Trigger deployment on push to the main branch
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Node.js
+      # Step 2: Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.19.0" # Ensure this matches your project's Node version
+          node-version: "22.19.0"
 
       # Step 3: Install dependencies
       - name: Install dependencies
@@ -28,9 +28,19 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # Step 5: Verify build folder
-      - name: List build folder
-        run: ls -la ./dist
+      # Step 5: Verify dist folder exists and has content
+      - name: Verify build folder
+        run: |
+          if [ ! -d "./dist" ]; then
+            echo "Error: dist folder not found! Build failed."
+            exit 1
+          fi
+          if [ -z "$(ls -A ./dist)" ]; then
+            echo "Error: dist folder is empty! Build failed."
+            exit 1
+          fi
+          echo "dist folder exists and has content:"
+          ls -la ./dist
 
       # Step 6: Deploy to subdomain via FTP
       - name: Deploy to subdomain via FTP
@@ -42,5 +52,5 @@ jobs:
           local-dir: ./dist # Vite build output
           server-dir: /home/bennytechhub/bank-churn.bennytechhub.com # Subdomain folder
           protocol: ftps # Use FTPS if supported
-          clean: true # Remove old files before deploying
-          dry-run: false # Actually deploy
+          clean: true
+          dry-run: false
