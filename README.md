@@ -1,22 +1,22 @@
 
-Bank Customer Churn Prediction API 🚀
+Bank Customer Churn Prediction API 
 
 A FastAPI machine learning service that predicts whether a bank customer will churn.
 The API uses a trained Random Forest pipeline with preprocessing (scaling + encoding)
 to serve real-time predictions.
 
-🌍 Live Demo
+Live Demo
 Base URL: https://bank-customer-churn-fastapi.onrender.com
 Swagger Docs: https://bank-customer-churn-fastapi.onrender.com/docs
 
-📂 Project Structure
+Project Structure
 bank-customer-churn-fastapi/
 │── models/              # Saved ML model (Git LFS)
 │── main.py              # FastAPI application
 │── requirements.txt     # Project dependencies
 │── start.sh             # Startup script for Render
 
-▶️ Running Locally
+Running Locally
 git clone https://github.com/benniella/bank-customer-churn-fastapi.git
 cd bank-customer-churn-fastapi
 pip install -r requirements.txt
@@ -24,7 +24,7 @@ uvicorn main:app --reload
 
 Swagger UI available at http://127.0.0.1:8000/docs
 
-📊 Example Prediction Request
+Example Prediction Request
 POST /predict
 
 Request:
@@ -57,5 +57,17 @@ Response:
 - Render – deployment
 - Git LFS – model storage
 
-👩‍💻 Author
-Built by Benedicta Otibhor Okhunlun (https://github.com/benniella) ✨
+## Author
+**Benedicta Otibhor Okhunlun**  
+- MSc Artificial Intelligence – University of Stirling  
+- AI/ML Lead @ Stripeedge
+
+
+
+## Contributing / Sponsorship
+I’m open to collaborations with:  
+- Banks & Fintechs (integrating ML into risk systems)  
+- Researchers (applied ML in finance)  
+- Sponsors & Accelerators (supporting AI-driven fintech projects)  
+
+Contact: [LinkedIn](https://www.linkedin.com/in/benedicta-okhunlun-9b8346280/) | [GitHub](https://github.com/benniella)  
