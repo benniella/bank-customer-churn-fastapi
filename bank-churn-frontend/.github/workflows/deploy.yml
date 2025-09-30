@@ -1,4 +1,4 @@
-name: Deploy Vite + Tailwind to cPanel
+name: Deploy Vite + Tailwind to cPanel Subdomain
 
 on:
   push:
@@ -28,13 +28,18 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # Step 5: Deploy to cPanel via FTP
-      - name: Deploy to cPanel via FTP
+      # Step 5: Optional - List build folder for debug
+      - name: List build folder
+        run: ls -la ./dist
+
+      # Step 6: Deploy to subdomain via FTP
+      - name: Deploy to subdomain via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./bank-churn-frontend/dist/ # Vite's build output directory
-          server-dir: /public_html/
-          protocol: ftp # Use 'ftps' if your server supports FTPS
+          local-dir: ./dist              # Vite build output folder
+          server-dir: /home/bennytechhub/bank-churn.bennytechhub.com  # Subdomain folder
+          protocol: ftps                 # Use FTPS if supported
+          clean: true                    # Remove old files before deploying
