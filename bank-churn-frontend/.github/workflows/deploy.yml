@@ -35,6 +35,6 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/ # Vite's build output directory
+          local-dir: ./bank-churn-frontend/dist/ # Vite's build output directory
           server-dir: /public_html/
           protocol: ftp # Use 'ftps' if your server supports FTPS
