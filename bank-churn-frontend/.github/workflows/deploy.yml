@@ -28,7 +28,7 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # Step 5: Optional - List build folder for debug
+      # Step 5: Verify build folder
       - name: List build folder
         run: ls -la ./dist
 
@@ -39,7 +39,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist              # Vite build output folder
-          server-dir: /home/bennytechhub/bank-churn.bennytechhub.com  # Subdomain folder
-          protocol: ftps                 # Use FTPS if supported
-          clean: true                    # Remove old files before deploying
+          local-dir: ./dist # Vite build output
+          server-dir: /home/bennytechhub/bank-churn.bennytechhub.com # Subdomain folder
+          protocol: ftps # Use FTPS if supported
+          clean: true # Remove old files before deploying
+          dry-run: false # Actually deploy
