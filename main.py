@@ -2,20 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
-import numpy as np
 import pandas as pd
 
-# Load the model
-model = joblib.load("models/model.joblib")
-THRESHOLD = 0.3
+# Load model
+model = joblib.load("models/model.pkl")  # ✅ Pick one format (pkl or joblib)
+
+# Threshold
+BEST_THRESHOLD = 0.57  # ✅ Pick one threshold
 
 # Initialize FastAPI app
-app = FastAPI()
+app = FastAPI(title="Churn Prediction API")
 
 # ✅ Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can restrict this to ["http://localhost:5173"] later
+    allow_origins=["*"],  # later restrict to frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,7 +37,7 @@ class CustomerData(BaseModel):
 
 @app.get("/")
 def home():
-    return {"message": "Bank Customer Churn Prediction API is running!"}
+    return {"message": "Churn Prediction API is running!"}
 
 @app.post("/predict")
 def predict(data: CustomerData):
@@ -53,11 +54,13 @@ def predict(data: CustomerData):
         "Geography": data.Geography
     }])
 
-    proba = model.predict_proba(X)[0][1]
-    prediction = int(proba >= THRESHOLD)
+    # Get churn probability
+    proba = model.predict_proba(X)[:, 1][0]
+
+    # Apply threshold
+    prediction = int(proba >= BEST_THRESHOLD)
 
     return {
-        "churn_probability": float(proba),
-        "prediction": "Churn" if prediction == 1 else "No Churn",
-        "threshold": THRESHOLD
+        "churn_probability": round(float(proba), 3),
+        "prediction": "Churn" if prediction == 1 else "Stay"
     }
