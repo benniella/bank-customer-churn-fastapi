@@ -1,140 +1,311 @@
+// src/components/PredictionForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { predictChurn } from "../utils/api";
+import { predictChurn } from "../utils/api.js";
 
-const PredictionForm = ({ setPrediction }) => {
-  const [formData, setFormData] = useState({
-    CreditScore: "",
-    Gender: "",
-    Age: "",
-    Tenure: "",
-    Balance: "",
-    NumOfProducts: "",
-    HasCrCard: "",
-    IsActiveMember: "",
-    EstimatedSalary: "",
-    Geography: "",
-  });
+const INITIAL = {
+  CreditScore: "",
+  Gender: "",
+  Age: "",
+  Tenure: "",
+  Balance: "",
+  NumOfProducts: "",
+  HasCrCard: "",
+  IsActiveMember: "",
+  EstimatedSalary: "",
+  Geography: "",
+};
 
+export default function PredictionForm({ setPrediction }) {
+  const [form, setForm] = useState(INITIAL);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [localResult, setLocalResult] = useState(null); // used if setPrediction not provided
   const navigate = useNavigate();
+
+  const validate = (values) => {
+    const e = {};
+    if (!values.CreditScore && values.CreditScore !== 0) e.CreditScore = "Required";
+    if (values.Gender !== "0" && values.Gender !== "1") e.Gender = "Select gender";
+    if (!values.Age && values.Age !== 0) e.Age = "Required";
+    if (values.Tenure === "") e.Tenure = "Required";
+    if (values.Balance === "") e.Balance = "Required";
+    if (values.NumOfProducts === "") e.NumOfProducts = "Required";
+    if (values.HasCrCard !== "0" && values.HasCrCard !== "1") e.HasCrCard = "Select";
+    if (values.IsActiveMember !== "0" && values.IsActiveMember !== "1") e.IsActiveMember = "Select";
+    if (values.EstimatedSalary === "") e.EstimatedSalary = "Required";
+    if (!values.Geography) e.Geography = "Select geography";
+    return e;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setForm((s) => ({ ...s, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+    setServerError("");
   };
+
+  const buildPayload = (values) => ({
+    CreditScore: Number(values.CreditScore),
+    Gender: Number(values.Gender),
+    Age: Number(values.Age),
+    Tenure: Number(values.Tenure),
+    Balance: Number(values.Balance),
+    NumOfProducts: Number(values.NumOfProducts),
+    HasCrCard: Number(values.HasCrCard),
+    IsActiveMember: Number(values.IsActiveMember),
+    EstimatedSalary: Number(values.EstimatedSalary),
+    Geography: values.Geography,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setServerError("");
+    const v = validate(form);
+    if (Object.keys(v).length) {
+      setErrors(v);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const payload = buildPayload(form);
+
     setLoading(true);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
     try {
-      const data = {
-        ...formData,
-        CreditScore: parseFloat(formData.CreditScore),
-        Age: parseFloat(formData.Age),
-        Tenure: parseFloat(formData.Tenure),
-        Balance: parseFloat(formData.Balance),
-        NumOfProducts: parseFloat(formData.NumOfProducts),
-        HasCrCard: parseInt(formData.HasCrCard),
-        IsActiveMember: parseInt(formData.IsActiveMember),
-        EstimatedSalary: parseFloat(formData.EstimatedSalary),
-      };
+      const data = await predictChurn(payload, { signal: controller.signal });
 
-      const predictionData = await predictChurn(data);
-      setPrediction(predictionData);
-      navigate("/results");
-    } catch (error) {
-      setPrediction({ error: "Could not get prediction" });
-      navigate("/results");
+      // Pass to parent or show locally
+      if (typeof setPrediction === "function") {
+        setPrediction(data);
+        navigate("/results");
+      } else {
+        setLocalResult(data);
+      }
+    } catch (err) {
+      const msg = err?.message || "Unable to get prediction";
+      setServerError(msg);
+      // If parent expects a response on /results, send an error object
+      if (typeof setPrediction === "function") {
+        setPrediction({ error: msg });
+        navigate("/results");
+      }
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setForm(INITIAL);
+    setErrors({});
+    setServerError("");
+    setLocalResult(null);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl p-8 mt-10">
-      <h2 className="text-3xl font-bold text-center text-blue-600 mb-6">
-        Bank Customer Churn Prediction
-      </h2>
+    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-8 mt-10">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold text-slate-800">Bank Customer Churn Prediction</h1>
+        <p className="text-sm text-slate-500 mt-1">Fill the form below and get a churn probability.</p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <InputField label="Credit Score" name="CreditScore" value={formData.CreditScore} handleChange={handleChange} type="number" />
-        <SelectField label="Gender" name="Gender" value={formData.Gender} handleChange={handleChange} options={[
-          { value: "", label: "Select Gender" },
-          { value: "1", label: "Male" },
-          { value: "0", label: "Female" }
-        ]} />
-        <InputField label="Age" name="Age" value={formData.Age} handleChange={handleChange} type="number" />
-        <InputField label="Tenure" name="Tenure" value={formData.Tenure} handleChange={handleChange} type="number" />
-        <InputField label="Balance" name="Balance" value={formData.Balance} handleChange={handleChange} type="number" />
-        <InputField label="Number of Products" name="NumOfProducts" value={formData.NumOfProducts} handleChange={handleChange} type="number" />
-        <SelectField label="Has Credit Card" name="HasCrCard" value={formData.HasCrCard} handleChange={handleChange} options={[
-          { value: "", label: "Select" },
-          { value: "1", label: "Yes" },
-          { value: "0", label: "No" }
-        ]} />
-        <SelectField label="Active Member" name="IsActiveMember" value={formData.IsActiveMember} handleChange={handleChange} options={[
-          { value: "", label: "Select" },
-          { value: "1", label: "Yes" },
-          { value: "0", label: "No" }
-        ]} />
-        <InputField label="Estimated Salary" name="EstimatedSalary" value={formData.EstimatedSalary} handleChange={handleChange} type="number" className="md:col-span-2" />
-        <SelectField label="Geography" name="Geography" value={formData.Geography} handleChange={handleChange} options={[
-          { value: "", label: "Select Country" },
-          { value: "France", label: "France" },
-          { value: "Spain", label: "Spain" },
-          { value: "Germany", label: "Germany" }
-        ]} className="md:col-span-2" />
+      {serverError && (
+        <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">
+          {serverError}
+        </div>
+      )}
 
-        <div className="md:col-span-2 flex justify-center mt-4">
-          <button
-            type="submit"
-            className="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg flex justify-center items-center"
-          >
-            {loading ? (
-              <span className="loader ease-linear rounded-full border-4 border-t-4 border-white h-6 w-6 animate-spin"></span>
-            ) : (
-              "Predict Churn"
-            )}
-          </button>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          label="Credit Score"
+          name="CreditScore"
+          value={form.CreditScore}
+          onChange={handleChange}
+          type="number"
+          min={0}
+          error={errors.CreditScore}
+          required
+        />
+
+        <Select
+          label="Gender"
+          name="Gender"
+          value={form.Gender}
+          onChange={handleChange}
+          options={[
+            { value: "", label: "Select gender" },
+            { value: "1", label: "Male" },
+            { value: "0", label: "Female" },
+          ]}
+          error={errors.Gender}
+          required
+        />
+
+        <Input label="Age" name="Age" value={form.Age} onChange={handleChange} type="number" min={0} error={errors.Age} required />
+
+        <Input label="Tenure" name="Tenure" value={form.Tenure} onChange={handleChange} type="number" min={0} error={errors.Tenure} required />
+
+        <Input label="Balance" name="Balance" value={form.Balance} onChange={handleChange} type="number" min={0} error={errors.Balance} required />
+
+        <Input
+          label="Number of Products"
+          name="NumOfProducts"
+          value={form.NumOfProducts}
+          onChange={handleChange}
+          type="number"
+          min={0}
+          error={errors.NumOfProducts}
+          required
+        />
+
+        <Select
+          label="Has Credit Card"
+          name="HasCrCard"
+          value={form.HasCrCard}
+          onChange={handleChange}
+          options={[
+            { value: "", label: "Select" },
+            { value: "1", label: "Yes" },
+            { value: "0", label: "No" },
+          ]}
+          error={errors.HasCrCard}
+          required
+        />
+
+        <Select
+          label="Active Member"
+          name="IsActiveMember"
+          value={form.IsActiveMember}
+          onChange={handleChange}
+          options={[
+            { value: "", label: "Select" },
+            { value: "1", label: "Yes" },
+            { value: "0", label: "No" },
+          ]}
+          error={errors.IsActiveMember}
+          required
+        />
+
+        <div className="md:col-span-2">
+          <Input
+            label="Estimated Salary"
+            name="EstimatedSalary"
+            value={form.EstimatedSalary}
+            onChange={handleChange}
+            type="number"
+            min={0}
+            error={errors.EstimatedSalary}
+            required
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <Select
+            label="Geography"
+            name="Geography"
+            value={form.Geography}
+            onChange={handleChange}
+            options={[
+              { value: "", label: "Select country" },
+              { value: "France", label: "France" },
+              { value: "Spain", label: "Spain" },
+              { value: "Germany", label: "Germany" },
+            ]}
+            error={errors.Geography}
+            required
+          />
+        </div>
+
+        <div className="md:col-span-2 flex items-center justify-between space-x-4 mt-2">
+          <div className="flex-1">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium py-3 px-5 rounded-lg shadow-sm transition"
+              aria-disabled={loading}
+            >
+              {loading && (
+                <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                  <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="opacity-75" />
+                </svg>
+              )}
+              <span>{loading ? "Predicting..." : "Predict Churn"}</span>
+            </button>
+          </div>
+
+          <div className="w-36 flex-shrink-0">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="w-full bg-white border border-slate-200 text-slate-700 py-2 px-3 rounded-lg hover:bg-slate-50 transition"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </form>
+
+      {/* inline result if parent didn't handle navigation */}
+      {localResult && (
+        <div className="mt-6 p-4 bg-slate-50 border rounded">
+          <div className="text-sm text-slate-600">Churn probability</div>
+          <div className="text-2xl font-semibold text-slate-800">{localResult.churn_probability}</div>
+          <div className="mt-2 text-sm">Prediction: <strong>{localResult.prediction}</strong></div>
+        </div>
+      )}
     </div>
   );
-};
+}
 
-const InputField = ({ label, name, value, handleChange, type, className }) => (
-  <div className={className}>
-    <label className="font-medium">{label}</label>
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={handleChange}
-      className="mt-2 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-      required
-    />
-  </div>
-);
+/* ---------- Small presentational controls ---------- */
 
-const SelectField = ({ label, name, value, handleChange, options, className }) => (
-  <div className={className}>
-    <label className="font-medium">{label}</label>
-    <select
-      name={name}
-      value={value}
-      onChange={handleChange}
-      className="mt-2 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400"
-      required
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  </div>
-);
+function Input({ label, name, value, onChange, type = "text", error, min, required }) {
+  return (
+    <label className="block">
+      <div className="text-sm font-medium text-slate-700 flex justify-between">
+        <span>{label}</span>
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
+      <input
+        name={name}
+        value={value}
+        onChange={onChange}
+        type={type}
+        min={min}
+        aria-invalid={!!error}
+        aria-required={required}
+        className={`mt-2 w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${error ? "border-red-200 bg-red-50" : "border-slate-200"}`}
+      />
+    </label>
+  );
+}
 
-export default PredictionForm;
+function Select({ label, name, value, onChange, options = [], error, required }) {
+  return (
+    <label className="block">
+      <div className="text-sm font-medium text-slate-700 flex justify-between">
+        <span>{label}</span>
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        aria-invalid={!!error}
+        aria-required={required}
+        className={`mt-2 w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition ${error ? "border-red-200 bg-red-50" : "border-slate-200"}`}
+      >
+        {options.map((o) => (
+          <option key={String(o.value)} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}

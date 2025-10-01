@@ -1,56 +1,56 @@
-name: Deploy Vite + Tailwind to cPanel Subdomain
+# name: Deploy Vite + Tailwind to cPanel Subdomain
+# on:
+#   push:
+#     branches:
+#       - main
 
-on:
-  push:
-    branches:
-      - main
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+#     steps:
+#       # Step 1: Checkout repository
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-    steps:
-      # Step 1: Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+#       # Step 2: Setup Node.js
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "22.19.0"
 
-      # Step 2: Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22.19.0"
+#       # Step 3: Install dependencies
+#       - name: Install dependencies
+#         run: npm install
 
-      # Step 3: Install dependencies
-      - name: Install dependencies
-        run: npm install
+#       # Step 4: Build the project
+#       - name: Build project
+#         run: npm run build
 
-      # Step 4: Build the project
-      - name: Build project
-        run: npm run build
+#       # Step 5: Verify dist folder exists and has content
+#       - name: Verify build folder
+#         run: |
+#           if [ ! -d "./dist" ]; then
+#             echo "Error: dist folder not found! Build failed."
+#             exit 1
+#           fi
+#           if [ -z "$(ls -A ./dist)" ]; then
+#             echo "Error: dist folder is empty! Build failed."
+#             exit 1
+#           fi
+#           echo "dist folder exists and has content:"
+#           ls -la ./dist
 
-      # Step 5: Verify dist folder exists and has content
-      - name: Verify build folder
-        run: |
-          if [ ! -d "./dist" ]; then
-            echo "Error: dist folder not found! Build failed."
-            exit 1
-          fi
-          if [ -z "$(ls -A ./dist)" ]; then
-            echo "Error: dist folder is empty! Build failed."
-            exit 1
-          fi
-          echo "dist folder exists and has content:"
-          ls -la ./dist
-
-      # Step 6: Deploy to subdomain via FTP
-      - name: Deploy to subdomain via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist # Vite build output
-          server-dir: /home/bennytechhub/bank-churn.bennytechhub.com # Subdomain folder
-          protocol: ftps # Use FTPS if supported
-          clean: true
-          dry-run: false
+#       # Step 6: Deploy to subdomain via FTP
+#       - name: Deploy to subdomain via FTP
+#         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+#         with:
+#           server: ${{ secrets.FTP_SERVER }}
+#           username: ${{ secrets.FTP_USERNAME }}
+#           password: ${{ secrets.FTP_PASSWORD }}
+#           local-dir: ./dist # Vite build output
+#           server-dir: /home/bennytechhub/bank-churn.bennytechhub.com # Subdomain folder
+#           protocol: ftps # Use FTPS if supported
+#           clean: true
+#           dry-run: false
+# #
