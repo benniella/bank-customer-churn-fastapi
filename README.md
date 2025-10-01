@@ -1,4 +1,4 @@
-# (Benny) Bank Customer Churn Prediction FastAPI
+# Bank Customer Churn Prediction FastAPI
 
 This project is a **Machine Learning pipeline + FastAPI service** that predicts whether a bank customer is likely to churn (leave the bank).
 It uses a **tuned Random Forest model** with a custom decision threshold (`0.57`) for better balance between precision and recall.
