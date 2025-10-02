@@ -1,73 +1,115 @@
+# Bank Customer Churn Prediction FastAPI
 
-Bank Customer Churn Prediction API 
+This project is a **Machine Learning pipeline + FastAPI service** that predicts whether a bank customer is likely to churn (leave the bank).
+It uses a **tuned Random Forest model** with a custom decision threshold (`0.57`) for better balance between precision and recall.
 
-A FastAPI machine learning service that predicts whether a bank customer will churn.
-The API uses a trained Random Forest pipeline with preprocessing (scaling + encoding)
-to serve real-time predictions.
+##Input Features
+The API expects the following fields in the request JSON:
 
-Live Demo
-Base URL: https://bank-customer-churn-fastapi.onrender.com
-Swagger Docs: https://bank-customer-churn-fastapi.onrender.com/docs
+- `credit_score` (int) → Customer credit score  
+- `age` (int) → Age of the customer  
+- `tenure` (int) → Number of years the customer has stayed with the bank  
+- `balance` (float) → Account balance  
+- `products_number` (int) → Number of bank products the customer uses  
+- `credit_card` (0 or 1) → Whether the customer has a credit card  
+- `active_member` (0 or 1) → Whether the customer is an active member  
+- `estimated_salary` (float) → Estimated salary of the customer  
+- `gender` ("Male" or "Female") → Customer gender  
+- `country` ("France", "Germany", or "Spain") → Customer country of residence  
 
-Project Structure
-bank-customer-churn-fastapi/
-│── models/              # Saved ML model (Git LFS)
-│── main.py              # FastAPI application
-│── requirements.txt     # Project dependencies
-│── start.sh             # Startup script for Render
+##Pipeline Steps
+Internally, the model performs the following steps:
 
-Running Locally
-git clone https://github.com/benniella/bank-customer-churn-fastapi.git
-cd bank-customer-churn-fastapi
-pip install -r requirements.txt
-uvicorn main:app --reload
+1. **Preprocessing**
+   - Standard scaling of numerical features  
+   - One-hot encoding of categorical features (`gender`, `country`)  
 
-Swagger UI available at http://127.0.0.1:8000/docs
+2. **Model**
+   - Random Forest Classifier  
+   - Tuned hyperparameters using GridSearchCV  
 
-Example Prediction Request
-POST /predict
+3. **Prediction**
+   - Produces churn probability (0–1)  
+   - Applies custom threshold = 0.57  
+   - Returns `"Churn"` or `"Not Churn"`  
 
-Request:
-{
-  "CreditScore": 600,
-  "Gender": 1,
-  "Age": 45,
-  "Tenure": 3,
-  "Balance": 50000,
-  "NumOfProducts": 2,
-  "HasCrCard": 1,
-  "IsActiveMember": 0,
-  "EstimatedSalary": 60000,
-  "Geography": "Germany"
-}
+#Project Structure
+BankCustomerChurnPrediction/  
+│── main.py              # FastAPI app  
+│── models/  
+│   └── model.pkl        # trained ML pipeline  
+│── requirements.txt     # dependencies  
+│── .gitignore  
+
+## Installation (Local)
+1. Clone the repository:
+   git clone https://github.com/benniella/bank-customer-churn-fastapi.git
+   cd bank-customer-churn-fastapi
+
+2. Create a virtual environment:
+   python3 -m venv venv
+   source venv/bin/activate   # Mac/Linux
+   venv\Scripts\activate    # Windows
+
+3. Install dependencies:
+   pip install -r requirements.txt
+
+4. Run FastAPI locally:
+   uvicorn main:app --reload
+
+5. Open in browser:
+   http://127.0.0.1:8000/doc
+
+## API Endpoints
+
+### Health Check
+GET /
 
 Response:
+{"message": "Churn Prediction API is running!"}
+
+### Predict Churn
+POST /predict
+
+Request Example:
 {
-  "churn_probability": 0.61,
-  "prediction": "Churn",
-  "threshold": 0.3
+  "credit_score": 650,
+  "age": 40,
+  "tenure": 5,
+  "balance": 60000,
+  "products_number": 2,
+  "credit_card": 1,
+  "active_member": 1,
+  "estimated_salary": 50000,
+  "gender": "Male",
+  "country": "France"
 }
 
-🛠️ Tech Stack
-- Python 3.9
-- FastAPI – API framework
-- scikit-learn – ML pipeline
-- NumPy & Pandas – data processing
-- Joblib – model persistence
-- Render – deployment
-- Git LFS – model storage
+Response Example:
+{
+  "prediction": "Churn",
+  "churn_probability": 0.734,
+  "threshold": 0.57
+}
+
+## Deployment
+This project is deployed on **Render**:  
+https://bank-customer-churn-fastapi.onrender.com/docs  
+
+The frontend (bank-churn.bennytechhub.com) consumes this API.  
+
+## Model Info
+- Algorithm: Random Forest Classifier  
+- Best Params:  
+  - n_estimators=300  
+  - max_depth=15  
+  - min_samples_leaf=10  
+  - max_features='sqrt'  
+- ROC-AUC: ~0.86 on test set  
+- Best threshold: 0.57  
 
 ## Author
 **Benedicta Otibhor Okhunlun**  
-- MSc Artificial Intelligence – University of Stirling  
-- AI/ML Lead @ Stripeedge
-
-
-
-## Contributing / Sponsorship
-I’m open to collaborations with:  
-- Banks & Fintechs (integrating ML into risk systems)  
-- Researchers (applied ML in finance)  
-- Sponsors & Accelerators (supporting AI-driven fintech projects)  
-
-Contact: [LinkedIn](https://www.linkedin.com/in/benedicta-okhunlun-9b8346280/) | [GitHub](https://github.com/benniella)  
+- MSc Artificial Intelligence Holder (University of Stirling)  
+- AI/ML Lead @ Stripeedge  
+- portfolio.bennytechhub.com  
