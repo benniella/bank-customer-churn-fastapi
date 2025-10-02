@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
 import joblib
@@ -23,6 +24,15 @@ model = joblib.load("models/model.pkl")
 BEST_THRESHOLD = 0.57
 
 app = FastAPI(title="Churn Prediction API")
+
+# 🚀 Enable CORS so frontend can call backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # for dev, or use ["https://bank-churn.bennytechhub.com"] in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
