@@ -1,15 +1,18 @@
 export default function About() {
   return (
-    <section className="container mx-auto py-12 px-6">
-      <h2 className="text-3xl font-bold text-blue-900 mb-4">About This Project</h2>
-      <p className="text-gray-600 mb-4">
-        This is a machine learning project that predicts whether a bank customer will churn.
-        It uses a FastAPI backend and a modern React + Tailwind frontend.
-      </p>
-      <p className="text-gray-600">
-        Built to demonstrate technical skills in frontend development, API integration,
-        and user-friendly design.
-      </p>
+    <section className="text-center py-16 px-6">
+      <div className="container mx-auto max-w-3xl">
+        {/* Title */}
+        <h2 className="text-4xl font-bold text-gold-400 mb-6">
+          About This Project
+        </h2>
+
+        {/* Short Description */}
+        <p className="text-lg text-black-300 leading-relaxed">
+          BankChurn AI empowers banks with predictive insights, helping them  
+          understand customer behavior and reduce churn with smarter decisions.
+        </p>
+      </div>
     </section>
   );
 }

@@ -2,11 +2,17 @@ function ResultCard({ result }) {
   const isChurn = result.prediction === "Churn";
 
   return (
-    <div className={`mt-6 p-6 rounded-lg shadow-md text-center ${isChurn ? "bg-red-100 border border-red-400" : "bg-green-100 border border-green-400"}`}>
-      <h3 className={`text-2xl font-bold ${isChurn ? "text-red-700" : "text-green-700"}`}>
+    <div
+      className={`mt-6 p-8 rounded-2xl shadow-xl text-center transition transform hover:scale-105 ${
+        isChurn
+          ? "bg-red-900 border border-red-700 text-red-300"
+          : "bg-green-900 border border-green-700 text-green-300"
+      }`}
+    >
+      <h3 className="text-3xl font-bold">
         {result.prediction}
       </h3>
-      <p className="mt-2 text-lg text-gray-700">
+      <p className="mt-3 text-lg">
         Probability: {(result.churn_probability * 100).toFixed(2)}%
       </p>
     </div>
