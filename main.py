@@ -4,25 +4,19 @@ from pydantic import BaseModel
 import joblib
 import pandas as pd
 
-# Load model
-model = joblib.load("models/model.pkl")  # ✅ Pick one format (pkl or joblib)
+model = joblib.load("models/model.pkl")
+BEST_THRESHOLD = 0.57
 
-# Threshold
-BEST_THRESHOLD = 0.57  # ✅ Pick one threshold
-
-# Initialize FastAPI app
 app = FastAPI(title="Churn Prediction API")
 
-# ✅ Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later restrict to frontend URL
+    allow_origins=["*"],  # ✅ Allows any origin in dev; change to your frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Input schema
 class CustomerData(BaseModel):
     CreditScore: float
     Gender: int
@@ -41,26 +35,27 @@ def home():
 
 @app.post("/predict")
 def predict(data: CustomerData):
-    X = pd.DataFrame([{
-        "CreditScore": data.CreditScore,
-        "Gender": data.Gender,
-        "Age": data.Age,
-        "Tenure": data.Tenure,
-        "Balance": data.Balance,
-        "NumOfProducts": data.NumOfProducts,
-        "HasCrCard": data.HasCrCard,
-        "IsActiveMember": data.IsActiveMember,
-        "EstimatedSalary": data.EstimatedSalary,
-        "Geography": data.Geography
-    }])
+    try:
+        X = pd.DataFrame([{
+            "CreditScore": data.CreditScore,
+            "Gender": data.Gender,
+            "Age": data.Age,
+            "Tenure": data.Tenure,
+            "Balance": data.Balance,
+            "NumOfProducts": data.NumOfProducts,
+            "HasCrCard": data.HasCrCard,
+            "IsActiveMember": data.IsActiveMember,
+            "EstimatedSalary": data.EstimatedSalary,
+            "Geography": data.Geography
+        }])
 
-    # Get churn probability
-    proba = model.predict_proba(X)[:, 1][0]
+        proba = model.predict_proba(X)[:, 1][0]
+        prediction = int(proba >= BEST_THRESHOLD)
 
-    # Apply threshold
-    prediction = int(proba >= BEST_THRESHOLD)
+        return {
+            "churn_probability": round(float(proba), 3),
+            "prediction": "Churn" if prediction == 1 else "Stay"
+        }
 
-    return {
-        "churn_probability": round(float(proba), 3),
-        "prediction": "Churn" if prediction == 1 else "Stay"
-    }
+    except Exception as e:
+        return {"error": str(e)}

@@ -117,7 +117,6 @@ export default function PredictionForm({ setPrediction }) {
       )}
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Input fields */}
         <Input label="Credit Score" name="CreditScore" value={form.CreditScore} onChange={handleChange} type="number" error={errors.CreditScore} />
         <Select label="Gender" name="Gender" value={form.Gender} onChange={handleChange}
           options={[{ value: "", label: "Select gender" }, { value: "1", label: "Male" }, { value: "0", label: "Female" }]} error={errors.Gender} />
@@ -129,11 +128,9 @@ export default function PredictionForm({ setPrediction }) {
           options={[{ value: "", label: "Select" }, { value: "1", label: "Yes" }, { value: "0", label: "No" }]} error={errors.HasCrCard} />
         <Select label="Active Member" name="IsActiveMember" value={form.IsActiveMember} onChange={handleChange}
           options={[{ value: "", label: "Select" }, { value: "1", label: "Yes" }, { value: "0", label: "No" }]} error={errors.IsActiveMember} />
-
         <Input label="Estimated Salary" name="EstimatedSalary" value={form.EstimatedSalary} onChange={handleChange} type="number" error={errors.EstimatedSalary} className="md:col-span-2" />
         <Select label="Geography" name="Geography" value={form.Geography} onChange={handleChange}
           options={[{ value: "", label: "Select country" }, { value: "France", label: "France" }, { value: "Spain", label: "Spain" }, { value: "Germany", label: "Germany" }]} error={errors.Geography} className="md:col-span-2" />
-
         <div className="md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
           <button type="submit" disabled={loading} className="w-full md:w-auto px-8 py-3 bg-gold-500 text-black font-semibold rounded-xl hover:bg-gold-400 transition-all duration-200 transform hover:scale-105 disabled:opacity-60">
             {loading ? "Predicting..." : "Predict Churn"}
