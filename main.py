@@ -1,118 +1,80 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI
 from pydantic import BaseModel
-import pandas as pd
 import joblib
-import traceback
-import os
+import numpy as np
+import pandas as pd
+from fastapi.middleware.cors import CORSMiddleware
 
-# ===== Model input schema =====
-class CustomerFeatures(BaseModel):
-    credit_score: int
-    age: int
+app = FastAPI()
+
+# Allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or specify your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load your saved components
+model = joblib.load("models/model.joblib")
+scaler = joblib.load("models/scaler.joblib")
+feature_names = joblib.load("models/feature_names.joblib")
+
+# Pydantic model to validate input
+class InputData(BaseModel):
+    credit_score: float
+    gender: int
+    age: float
     tenure: int
     balance: float
     products_number: int
     credit_card: int
     active_member: int
     estimated_salary: float
-    gender: int
     country: str
 
 
-# ===== Debug file system =====
-print("Current directory:", os.getcwd())
-print("Files:", os.listdir("."))
-if os.path.exists("models"):
-    print("Models folder:", os.listdir("models"))
-
-
-# ===== Load model =====
-try:
-    model = joblib.load("models/model.pkl")
-    BEST_THRESHOLD = 0.57
-    print("✓ Model loaded successfully")
-
-    if hasattr(model, "feature_names_in_"):
-        print(f"Expected features: {list(model.feature_names_in_)}")
-    if hasattr(model, "n_features_in_"):
-        print(f"Number of features: {model.n_features_in_}")
-
-except Exception as e:
-    print(f"✗ Error loading model: {e}")
-    traceback.print_exc()
-    model = None
-    BEST_THRESHOLD = 0.57
-
-
-# ===== FastAPI app =====
-app = FastAPI(title="Churn Prediction API", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/")
-def home():
-    return {
-        "message": "Churn Prediction API is running!",
-        "status": "healthy",
-        "model_loaded": model is not None,
-    }
-
-
 @app.post("/predict")
-def predict(features: CustomerFeatures):
-    if model is None:
-        raise HTTPException(status_code=500, detail="Model not loaded")
-
+def predict(data: InputData):
     try:
-        # Build DataFrame with all required columns
-        X = pd.DataFrame([{
-            "credit_score": features.credit_score,
-            "country": features.country,
-            "gender": features.gender,
-            "age": features.age,
-            "tenure": features.tenure,
-            "balance": features.balance,
-            "products_number": features.products_number,
-            "credit_card": features.credit_card,
-            "active_member": features.active_member,
-            "estimated_salary": features.estimated_salary,
-            "Gender": features.gender,  # duplicate for backward compatibility
-        }])
+        # Convert input to DataFrame
+        df = pd.DataFrame([data.dict()])
 
-        print(f"Input columns: {X.columns.tolist()}")
-        print(f"Input shape: {X.shape}")
+        # 1️⃣ Encode categorical columns manually
+        # Handle country (France base → Germany, Spain as one-hot)
+        df['country_Germany'] = (df['country'] == 'Germany').astype(int)
+        df['country_Spain'] = (df['country'] == 'Spain').astype(int)
+        df.drop(columns=['country'], inplace=True)
 
-        # ===== Encode categorical field =====
-        country_map = {"France": 0, "Spain": 1, "Germany": 2}
-        X["country"] = X["country"].map(country_map)
+        # Handle gender (Female = 0, Male = 1)
+        df['gender_1'] = df['gender'].astype(int)
+        df.drop(columns=['gender'], inplace=True)
 
-        if X["country"].isnull().any():
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid country value. Must be one of: France, Spain, Germany.",
-            )
+        # 2️⃣ Scale numeric columns
+        numeric_cols = [
+            'credit_score', 'age', 'tenure', 'balance',
+            'products_number', 'estimated_salary'
+        ]
+        df[numeric_cols] = scaler.transform(df[numeric_cols])
 
-        # ===== Predict =====
-        proba = float(model.predict_proba(X)[0, 1])
-        prediction = "Churn" if proba >= BEST_THRESHOLD else "Not Churn"
+        # 3️⃣ Ensure column order matches model training
+        X = df.reindex(columns=feature_names, fill_value=0)
 
-        print(f"✓ Prediction: {prediction} ({proba:.3f})")
+        # 4️⃣ Make prediction
+        churn_proba = model.predict_proba(X)[0][1]
+        prediction = int(churn_proba >= 0.5)
 
         return {
             "prediction": prediction,
-            "churn_probability": round(proba, 3),
-            "threshold": BEST_THRESHOLD,
+            "churn_probability": round(float(churn_proba), 4),
+            "threshold": 0.5,
         }
 
     except Exception as e:
-        print(f"✗ Error: {str(e)}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"error": str(e)}
+
+
+@app.get("/")
+def root():
+    return {"message": "Churn prediction API is running!"}
