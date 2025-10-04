@@ -34,7 +34,7 @@ export default function PredictionForm({ setPrediction }) {
     }
     
     // Gender validation
-    if (values.gender !== "0" && values.gender !== "1") {
+    if (values.gender !== "Male" && values.gender !== "Female") {
       e.gender = "Select gender";
     }
     
@@ -99,16 +99,16 @@ export default function PredictionForm({ setPrediction }) {
   };
 
   const buildPayload = (values) => ({
-    active_member: parseInt(values.active_member, 10), // Convert to integer
-    age: parseInt(values.age, 10),
-    balance: parseFloat(values.balance),
+    credit_score: parseFloat(values.credit_score),
     country: values.country,
-    credit_card: parseInt(values.credit_card, 10), // Convert to integer
-    credit_score: parseInt(values.credit_score, 10),
-    estimated_salary: parseFloat(values.estimated_salary),
-    gender: parseInt(values.gender, 10), // Convert to integer
-    products_number: parseInt(values.products_number, 10),
+    gender: values.gender, // Send as string "Male" or "Female"
+    age: parseInt(values.age, 10),
     tenure: parseInt(values.tenure, 10),
+    balance: parseFloat(values.balance),
+    products_number: parseInt(values.products_number, 10),
+    credit_card: parseInt(values.credit_card, 10),
+    active_member: parseInt(values.active_member, 10),
+    estimated_salary: parseFloat(values.estimated_salary),
   });
 
   const handleSubmit = async (e) => {
@@ -205,8 +205,8 @@ export default function PredictionForm({ setPrediction }) {
           onChange={handleChange}
           options={[
             { value: "", label: "Select gender" }, 
-            { value: "1", label: "Male" }, 
-            { value: "0", label: "Female" }
+            { value: "Male", label: "Male" }, 
+            { value: "Female", label: "Female" }
           ]} 
           error={errors.gender} 
         />

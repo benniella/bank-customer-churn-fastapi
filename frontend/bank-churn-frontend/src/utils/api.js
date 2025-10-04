@@ -61,11 +61,20 @@ export async function predictChurn(customerData, { signal, timeout = 60000 } = {
     const data = await res.json();
     
     // Validate response structure
-    if (!data || typeof data.churn_probability === 'undefined') {
+    if (!data || typeof data.prediction === 'undefined' || !Array.isArray(data.probability)) {
       throw new Error("Invalid response format from server");
     }
 
-    return data;
+    // Transform backend response to match frontend expectations
+    // Backend returns: { prediction: 0/1, probability: [prob_no_churn, prob_churn] }
+    // Frontend expects: { prediction: "No Churn"/"Churn", churn_probability: number, threshold: number }
+    const transformedData = {
+      prediction: data.prediction === 1 ? "Churn" : "No Churn",
+      churn_probability: data.probability[1], // Probability of churn (second element)
+      threshold: 0.57 // Fixed threshold used by your model
+    };
+
+    return transformedData;
   } catch (err) {
     clearTimeout(timeoutId);
     
@@ -111,7 +120,7 @@ export async function checkAPIHealth() {
     if (!res.ok) return false;
     
     const data = await res.json();
-    return data.message === "Churn Prediction API is running!";
+    return data.message && data.message.includes("Churn Prediction API is running");
   } catch {
     return false;
   }
