@@ -12,7 +12,7 @@ app = FastAPI(title="Churn Prediction API", version="0.1.0")
 # ===== CORS Middleware =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow all origins
+    allow_origins=["*"],  # Allow all origins (frontend & local)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,21 +47,29 @@ class CustomerData(BaseModel):
 def preprocess_input(data: CustomerData):
     df = pd.DataFrame([data.dict()])
 
+    # Ensure required categorical columns exist
+    if "country" not in df.columns:
+        df["country"] = "France"
+    if "gender" not in df.columns:
+        df["gender"] = "Male"
+
     # One-hot encode categorical columns
     df = pd.get_dummies(df, columns=["country", "gender"], drop_first=True)
 
-    # Ensure same columns as training
+    # Ensure all expected columns exist
     expected_cols = [
         'credit_score', 'age', 'tenure', 'balance', 'products_number',
         'credit_card', 'active_member', 'estimated_salary',
         'country_Germany', 'country_Spain', 'gender_Male'
     ]
+
     for col in expected_cols:
         if col not in df.columns:
             df[col] = 0
+
+    # Align column order
     df = df[expected_cols]
     return df
-
 
 
 # ===== Prediction Endpoint =====
