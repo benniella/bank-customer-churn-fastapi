@@ -100,13 +100,13 @@ export default function PredictionForm({ setPrediction }) {
 
   const buildPayload = (values) => ({
     credit_score: parseInt(values.credit_score, 10),
-    gender: parseInt(values.gender, 10), // Convert to integer
+    gender: String(values.gender), // Keep as string
     age: parseInt(values.age, 10),
     tenure: parseInt(values.tenure, 10),
     balance: parseFloat(values.balance),
     products_number: parseInt(values.products_number, 10),
-    credit_card: parseInt(values.credit_card, 10), // Convert to integer
-    active_member: parseInt(values.active_member, 10), // Convert to integer
+    credit_card: String(values.credit_card), // Keep as string
+    active_member: String(values.active_member), // Keep as string
     estimated_salary: parseFloat(values.estimated_salary),
     country: values.country,
   });
@@ -125,7 +125,9 @@ export default function PredictionForm({ setPrediction }) {
 
     const payload = buildPayload(form);
     
-    console.log("Sending payload:", payload); // Debug log
+    console.log("Form values:", form);
+    console.log("Built payload:", payload);
+    console.log("Payload JSON:", JSON.stringify(payload, null, 2));
 
     setLoading(true);
     try {
