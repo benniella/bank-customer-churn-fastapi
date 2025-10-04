@@ -166,7 +166,7 @@ export default function PredictionForm({ setPrediction }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-black border border-yellow-600 shadow-xl rounded-2xl p-10 mt-10">
+    <div className="max-w-4xl mx-4 md:mx-auto  bg-black border border-yellow-600 shadow-xl rounded-2xl  p-6 md:p-10 mt-10">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-yellow-500">
           Bank Customer Churn Prediction
@@ -186,7 +186,7 @@ export default function PredictionForm({ setPrediction }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-2  md:grid-cols-2 gap-6">
         <Input 
           label="Credit Score" 
           name="credit_score" 
@@ -304,7 +304,7 @@ export default function PredictionForm({ setPrediction }) {
           error={errors.country} 
           className="md:col-span-2" 
         />
-        <div className="md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
+        <div className="col-span-2 flex md:flex-row items-center justify-between gap-4 mt-6">
           <button 
             type="submit" 
             disabled={loading} 
