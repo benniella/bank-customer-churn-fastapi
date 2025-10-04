@@ -4,17 +4,17 @@ from pydantic import BaseModel, Field
 import pandas as pd
 import joblib
 
-# Define input schema - EXACTLY matching API docs
+# Define input schema - Accept integers for all categorical fields
 class CustomerFeatures(BaseModel):
-    credit_score: int = Field(..., description="Credit score")
-    age: int = Field(..., description="Age")
-    tenure: int = Field(..., description="Tenure in years")
-    balance: float = Field(..., description="Account balance")
-    products_number: int = Field(..., description="Number of products")
-    credit_card: str = Field(..., description="Has credit card (string: '0' or '1')")
-    active_member: str = Field(..., description="Is active member (string: '0' or '1')")
-    estimated_salary: float = Field(..., description="Estimated salary")
-    gender: str = Field(..., description="Gender (string: '0' or '1')")
+    credit_score: int = Field(..., ge=300, le=850, description="Credit score")
+    age: int = Field(..., ge=18, le=100, description="Age")
+    tenure: int = Field(..., ge=0, le=10, description="Tenure in years")
+    balance: float = Field(..., ge=0, description="Account balance")
+    products_number: int = Field(..., ge=1, le=4, description="Number of products")
+    credit_card: int = Field(..., ge=0, le=1, description="Has credit card (0 or 1)")
+    active_member: int = Field(..., ge=0, le=1, description="Is active member (0 or 1)")
+    estimated_salary: float = Field(..., ge=0, description="Estimated salary")
+    gender: int = Field(..., ge=0, le=1, description="Gender: 0=Female, 1=Male")
     country: str = Field(..., description="Country")
 
     class Config:
@@ -25,10 +25,10 @@ class CustomerFeatures(BaseModel):
                 "tenure": 5,
                 "balance": 50000.0,
                 "products_number": 2,
-                "credit_card": "1",
-                "active_member": "1",
+                "credit_card": 1,
+                "active_member": 1,
                 "estimated_salary": 75000.0,
-                "gender": "1",
+                "gender": 1,
                 "country": "France"
             }
         }
@@ -50,14 +50,14 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CRITICAL: CORS must be added BEFORE routes
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],  # Expose all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.get("/")
@@ -89,7 +89,8 @@ def predict(features: CustomerFeatures):
         data_dict = features.dict()
         X = pd.DataFrame([data_dict])
         
-        print(f"Input data: {data_dict}")  # Debug log
+        print(f"Input data: {data_dict}")
+        print(f"DataFrame dtypes: {X.dtypes.to_dict()}")
         
         # Predict churn probability
         proba = model.predict_proba(X)[:, 1][0]
@@ -101,12 +102,15 @@ def predict(features: CustomerFeatures):
             "threshold": BEST_THRESHOLD
         }
         
-        print(f"Prediction result: {result}")  # Debug log
+        print(f"Prediction result: {result}")
         
         return result
         
     except Exception as e:
-        print(f"Prediction error: {str(e)}")  # Debug log
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Prediction error: {str(e)}")
+        print(f"Full traceback: {error_trace}")
         raise HTTPException(
             status_code=500, 
             detail=f"Prediction error: {str(e)}"

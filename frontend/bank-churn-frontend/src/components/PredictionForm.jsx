@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { predictChurn } from "../utils/api.js";
+import { predictChurn, wakeUpServer } from "../utils/api.js";
 
 const INITIAL = {
   credit_score: "",
@@ -100,13 +100,13 @@ export default function PredictionForm({ setPrediction }) {
 
   const buildPayload = (values) => ({
     credit_score: parseInt(values.credit_score, 10),
-    gender: values.gender, // Keep as string "0" or "1"
+    gender: parseInt(values.gender, 10), // Convert to integer
     age: parseInt(values.age, 10),
     tenure: parseInt(values.tenure, 10),
     balance: parseFloat(values.balance),
     products_number: parseInt(values.products_number, 10),
-    credit_card: values.credit_card, // Keep as string "0" or "1"
-    active_member: values.active_member, // Keep as string "0" or "1"
+    credit_card: parseInt(values.credit_card, 10), // Convert to integer
+    active_member: parseInt(values.active_member, 10), // Convert to integer
     estimated_salary: parseFloat(values.estimated_salary),
     country: values.country,
   });
@@ -129,6 +129,11 @@ export default function PredictionForm({ setPrediction }) {
 
     setLoading(true);
     try {
+      // First, wake up the server (important for Render free tier)
+      console.log("Waking up server...");
+      await wakeUpServer();
+      console.log("Server ready, sending prediction request...");
+      
       const data = await predictChurn(payload);
       console.log("Received data:", data); // Debug log
 
@@ -167,6 +172,9 @@ export default function PredictionForm({ setPrediction }) {
         <p className="text-sm text-gray-400 mt-2">
           Fill the form below and get a churn probability prediction.
         </p>
+        <div className="mt-4 p-3 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg text-blue-300 text-sm">
+          ⏱️ <strong>Note:</strong> First prediction may take 30-60 seconds as the server wakes up (Render free tier limitation). Subsequent predictions will be faster.
+        </div>
       </header>
 
       {serverError && (
@@ -300,7 +308,15 @@ export default function PredictionForm({ setPrediction }) {
             disabled={loading} 
             className="w-full md:w-auto px-8 py-3 bg-yellow-500 text-black font-semibold rounded-xl hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {loading ? "Predicting..." : "Predict Churn"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Predicting... (This may take 30-60s)</span>
+              </span>
+            ) : "Predict Churn"}
           </button>
           <button 
             type="button" 

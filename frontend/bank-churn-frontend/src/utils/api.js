@@ -4,7 +4,7 @@ const PROXY_URL = "https://corsproxy.io/?";
 const DIRECT_URL = import.meta.env.VITE_API_URL || "https://bank-customer-churn-fastapi.onrender.com";
 const API_URL = USE_PROXY ? PROXY_URL + encodeURIComponent(DIRECT_URL) : DIRECT_URL;
 
-export async function predictChurn(customerData, { signal, timeout = 30000 } = {}) {
+export async function predictChurn(customerData, { signal, timeout = 60000 } = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -70,7 +70,7 @@ export async function predictChurn(customerData, { signal, timeout = 30000 } = {
     clearTimeout(timeoutId);
     
     if (err.name === "AbortError") {
-      throw new Error("Request timed out. Please check your internet connection and try again.");
+      throw new Error("The server is taking too long to respond. This might be because the server is waking up (Render free tier). Please wait a moment and try again.");
     }
     
     if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
@@ -78,6 +78,25 @@ export async function predictChurn(customerData, { signal, timeout = 30000 } = {
     }
     
     throw err;
+  }
+}
+
+// Wake up the server (for Render free tier)
+export async function wakeUpServer() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const res = await fetch(`${API_URL}/`, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
