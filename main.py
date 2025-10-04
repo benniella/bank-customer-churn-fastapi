@@ -19,7 +19,8 @@ app.add_middleware(
 )
 
 # ===== Load Model =====
-MODEL_PATH = os.path.join(os.getcwd(), "model", "model.pkl")
+model = joblib.load("models/model.pkl")
+
 
 try:
     with open(MODEL_PATH, "rb") as f:
