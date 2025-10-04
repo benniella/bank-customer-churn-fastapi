@@ -1,11 +1,10 @@
+import os
 import joblib
+import numpy as np
+import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import pickle
-import numpy as np
-import pandas as pd
-import os
 
 # ===== FastAPI app =====
 app = FastAPI(title="Churn Prediction API", version="0.1.0")
@@ -20,13 +19,11 @@ app.add_middleware(
 )
 
 # ===== Load Model =====
-model = joblib.load("models/model.pkl")
-
+MODEL_PATH = os.path.join("models", "model.pkl")
 
 try:
-    with open(MODEL_PATH, "rb") as f:
-        model = pickle.load(f)
-    print("✅ Model loaded successfully.")
+    model = joblib.load(MODEL_PATH)
+    print(f"✅ Model loaded successfully from {MODEL_PATH}")
 except Exception as e:
     print(f"❌ Error loading model: {e}")
     model = None
@@ -50,13 +47,13 @@ class CustomerData(BaseModel):
 def preprocess_input(data: CustomerData):
     df = pd.DataFrame([data.dict()])
 
-    # Encode categorical values (assuming they were one-hot encoded during training)
+    # Encode categorical values
     df = pd.get_dummies(df, columns=["Geography", "Gender"], drop_first=True)
 
     # Ensure same columns as training data
     expected_cols = [
-        'CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 
-        'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 
+        'CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts',
+        'HasCrCard', 'IsActiveMember', 'EstimatedSalary',
         'Geography_Germany', 'Geography_Spain', 'Gender_Male'
     ]
     for col in expected_cols:
