@@ -1,31 +1,36 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import pandas as pd
 import joblib
 import numpy as np
-import pandas as pd
-from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+# ====================================================
+# Load the trained model
+# ====================================================
+model = joblib.load("model.pkl")
 
-# Allow frontend requests
+# ====================================================
+# Initialize FastAPI app
+# ====================================================
+app = FastAPI(title="Churn Prediction API", version="1.0.0")
+
+# Enable CORS so frontend (React) can communicate
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specify your frontend URL
+    allow_origins=["*"],  # You can restrict later to your domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load your saved components
-model = joblib.load("models/model.joblib")
-scaler = joblib.load("models/scaler.joblib")
-feature_names = joblib.load("models/feature_names.joblib")
-
-# Pydantic model to validate input
-class InputData(BaseModel):
+# ====================================================
+# Define input schema
+# ====================================================
+class CustomerData(BaseModel):
     credit_score: float
     gender: int
-    age: float
+    age: int
     tenure: int
     balance: float
     products_number: int
@@ -34,47 +39,67 @@ class InputData(BaseModel):
     estimated_salary: float
     country: str
 
+# ====================================================
+# Helper function for preprocessing
+# ====================================================
+def preprocess_input(data: CustomerData) -> pd.DataFrame:
+    df = pd.DataFrame([data.dict()])
 
+    # One-hot encode 'country' manually
+    countries = ["France", "Spain", "Germany"]
+    for c in countries:
+        df[f"country_{c}"] = 1 if data.country == c else 0
+
+    # Drop original country column
+    df = df.drop(columns=["country"], errors="ignore")
+
+    # Expected columns (must match training order)
+    expected_columns = [
+        "credit_score", "gender", "age", "tenure", "balance",
+        "products_number", "credit_card", "active_member",
+        "estimated_salary", "country_France", "country_Spain", "country_Germany"
+    ]
+
+    # Ensure all columns exist
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = 0
+
+    # Reorder & cast everything to float
+    df = df[expected_columns].astype(float)
+
+    return df
+
+# ====================================================
+# Prediction endpoint
+# ====================================================
 @app.post("/predict")
-def predict(data: InputData):
+async def predict(data: CustomerData):
     try:
-        # Convert input to DataFrame
-        df = pd.DataFrame([data.dict()])
+        processed = preprocess_input(data)
+        prediction = model.predict(processed)[0]
 
-        # 1️⃣ Encode categorical columns manually
-        # Handle country (France base → Germany, Spain as one-hot)
-        df['country_Germany'] = (df['country'] == 'Germany').astype(int)
-        df['country_Spain'] = (df['country'] == 'Spain').astype(int)
-        df.drop(columns=['country'], inplace=True)
-
-        # Handle gender (Female = 0, Male = 1)
-        df['gender_1'] = df['gender'].astype(int)
-        df.drop(columns=['gender'], inplace=True)
-
-        # 2️⃣ Scale numeric columns
-        numeric_cols = [
-            'credit_score', 'age', 'tenure', 'balance',
-            'products_number', 'estimated_salary'
-        ]
-        df[numeric_cols] = scaler.transform(df[numeric_cols])
-
-        # 3️⃣ Ensure column order matches model training
-        X = df.reindex(columns=feature_names, fill_value=0)
-
-        # 4️⃣ Make prediction
-        churn_proba = model.predict_proba(X)[0][1]
-        prediction = int(churn_proba >= 0.5)
+        probability = None
+        if hasattr(model, "predict_proba"):
+            probability = float(model.predict_proba(processed)[0][1])
 
         return {
-            "prediction": prediction,
-            "churn_probability": round(float(churn_proba), 4),
-            "threshold": 0.5,
+            "success": True,
+            "prediction": int(prediction),
+            "probability": probability,
+            "message": "Prediction successful"
         }
 
     except Exception as e:
-        return {"error": str(e)}
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Prediction failed due to an internal error."
+        }
 
-
+# ====================================================
+# Root endpoint
+# ====================================================
 @app.get("/")
-def root():
-    return {"message": "Churn prediction API is running!"}
+async def home():
+    return {"message": "Bank Customer Churn Prediction API is live!"}
