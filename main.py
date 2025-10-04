@@ -31,37 +31,37 @@ except Exception as e:
 
 # ===== Request Schema =====
 class CustomerData(BaseModel):
-    CreditScore: float
-    Geography: str
-    Gender: str
-    Age: int
-    Tenure: int
-    Balance: float
-    NumOfProducts: int
-    HasCrCard: int
-    IsActiveMember: int
-    EstimatedSalary: float
+    credit_score: float
+    country: str
+    gender: str
+    age: int
+    tenure: int
+    balance: float
+    products_number: int
+    credit_card: int
+    active_member: int
+    estimated_salary: float
 
 
 # ===== Helper for encoding categorical values =====
 def preprocess_input(data: CustomerData):
     df = pd.DataFrame([data.dict()])
 
-    # Encode categorical values
-    df = pd.get_dummies(df, columns=["Geography", "Gender"], drop_first=True)
+    # One-hot encode categorical columns
+    df = pd.get_dummies(df, columns=["country", "gender"], drop_first=True)
 
-    # Ensure same columns as training data
+    # Ensure same columns as training
     expected_cols = [
-        'CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts',
-        'HasCrCard', 'IsActiveMember', 'EstimatedSalary',
-        'Geography_Germany', 'Geography_Spain', 'Gender_Male'
+        'credit_score', 'age', 'tenure', 'balance', 'products_number',
+        'credit_card', 'active_member', 'estimated_salary',
+        'country_Germany', 'country_Spain', 'gender_Male'
     ]
     for col in expected_cols:
         if col not in df.columns:
             df[col] = 0
     df = df[expected_cols]
-
     return df
+
 
 
 # ===== Prediction Endpoint =====
