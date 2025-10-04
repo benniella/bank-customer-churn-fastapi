@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
 import joblib
-import os
+import traceback
 
+# ===== Model input schema =====
 class CustomerFeatures(BaseModel):
     credit_score: int
     age: int
@@ -17,18 +18,22 @@ class CustomerFeatures(BaseModel):
     gender: int
     country: str
 
+# ===== Load model and preprocessor =====
 try:
-    model_path = os.path.join("models", "model.pkl")
-    model = joblib.load(model_path)
+    model = joblib.load("models/model.pkl")  # Your trained model
+    preprocessor = joblib.load("models/preprocessor.pkl")  # Preprocessing pipeline
     BEST_THRESHOLD = 0.57
-    print("✓ Model loaded successfully")
+    print("✓ Model and preprocessor loaded successfully")
 except Exception as e:
-    print(f"✗ Error loading model: {e}")
+    print(f"✗ Error loading model/preprocessor: {e}")
     model = None
+    preprocessor = None
     BEST_THRESHOLD = 0.57
 
+# ===== FastAPI app =====
 app = FastAPI(title="Churn Prediction API", version="0.1.0")
 
+# ===== CORS =====
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,32 +48,32 @@ def home():
 
 @app.post("/predict")
 def predict(features: CustomerFeatures):
-    if model is None:
-        raise HTTPException(status_code=500, detail="Model not loaded")
+    if model is None or preprocessor is None:
+        raise HTTPException(status_code=500, detail="Model or preprocessor not loaded")
 
     try:
+        # Build DataFrame in correct column order
         X = pd.DataFrame([{
-            "credit_score": features.credit_score,
-            "country": features.country,
-            "gender": features.gender,
-            "age": features.age,
-            "tenure": features.tenure,
-            "balance": features.balance,
-            "products_number": features.products_number,
-            "credit_card": features.credit_card,
-            "active_member": features.active_member,
-            "estimated_salary": features.estimated_salary,
-            "Gender": features.gender
+            'credit_score': features.credit_score,
+            'country': features.country,
+            'gender': features.gender,
+            'age': features.age,
+            'tenure': features.tenure,
+            'balance': features.balance,
+            'products_number': features.products_number,
+            'credit_card': features.credit_card,
+            'active_member': features.active_member,
+            'estimated_salary': features.estimated_salary
         }])
 
         print(f"DataFrame columns: {X.columns.tolist()}")
         print(f"DataFrame shape: {X.shape}")
 
-        # Ensure all numeric values are correct type and not NaN
-        if X.isnull().values.any():
-            raise HTTPException(status_code=400, detail="Invalid input: NaN detected")
+        # Preprocess features exactly as in training
+        X_processed = preprocessor.transform(X)
 
-        proba = model.predict_proba(X)[:, 1][0]
+        # Prediction
+        proba = model.predict_proba(X_processed)[:, 1][0]
         prediction = "Churn" if proba >= BEST_THRESHOLD else "Not Churn"
 
         return {
@@ -78,7 +83,6 @@ def predict(features: CustomerFeatures):
         }
 
     except Exception as e:
-        import traceback
         print(f"Error: {str(e)}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
