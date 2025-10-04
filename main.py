@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 import pandas as pd
 import joblib
 
-# Define input schema - Accept integers for all categorical fields
+# Define input schema
 class CustomerFeatures(BaseModel):
     credit_score: int = Field(..., ge=300, le=850, description="Credit score")
     age: int = Field(..., ge=18, le=100, description="Age")
@@ -85,12 +85,26 @@ def predict(features: CustomerFeatures):
         )
     
     try:
-        # Convert input to DataFrame
+        # Convert input to dict
         data_dict = features.dict()
-        X = pd.DataFrame([data_dict])
+        
+        # Explicitly create DataFrame with correct types to avoid pandas type inference issues
+        X = pd.DataFrame([{
+            'credit_score': int(data_dict['credit_score']),
+            'age': int(data_dict['age']),
+            'tenure': int(data_dict['tenure']),
+            'balance': float(data_dict['balance']),
+            'products_number': int(data_dict['products_number']),
+            'credit_card': int(data_dict['credit_card']),
+            'active_member': int(data_dict['active_member']),
+            'estimated_salary': float(data_dict['estimated_salary']),
+            'gender': int(data_dict['gender']),
+            'country': str(data_dict['country'])
+        }])
         
         print(f"Input data: {data_dict}")
-        print(f"DataFrame dtypes: {X.dtypes.to_dict()}")
+        print(f"DataFrame:\n{X}")
+        print(f"DataFrame dtypes:\n{X.dtypes}")
         
         # Predict churn probability
         proba = model.predict_proba(X)[:, 1][0]
@@ -116,7 +130,6 @@ def predict(features: CustomerFeatures):
             detail=f"Prediction error: {str(e)}"
         )
 
-# Add explicit OPTIONS handler for CORS preflight
 @app.options("/predict")
 async def options_predict():
     return {"message": "OK"}
