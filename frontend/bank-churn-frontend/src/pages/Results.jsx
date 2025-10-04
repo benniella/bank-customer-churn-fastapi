@@ -38,7 +38,7 @@ const Results = ({ prediction }) => {
   const probabilityPercent = (probability * 100).toFixed(2);
 
   return (
-    <div className="max-w-2xl mx-auto bg-gray-900 shadow-2xl rounded-3xl p-10 mt-10 border border-yellow-700">
+    <div className="max-w-2xl mx-4 md:mx-auto bg-gray-900  shadow-2xl rounded-3xl p-10 mt-10 border border-yellow-700">
       <h2 className="text-3xl font-bold text-center text-yellow-500 mb-8">
         Prediction Results
       </h2>
