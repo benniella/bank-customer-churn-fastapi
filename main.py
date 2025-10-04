@@ -1,105 +1,89 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import pandas as pd
-import joblib
+import pickle
 import numpy as np
+import pandas as pd
+import os
 
-# ====================================================
-# Load the trained model
-# ====================================================
-model = joblib.load("model.pkl")
+# ===== FastAPI app =====
+app = FastAPI(title="Churn Prediction API", version="0.1.0")
 
-# ====================================================
-# Initialize FastAPI app
-# ====================================================
-app = FastAPI(title="Churn Prediction API", version="1.0.0")
-
-# Enable CORS so frontend (React) can communicate
+# ===== CORS Middleware =====
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can restrict later to your domain
+    allow_origins=["*"],  # allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ====================================================
-# Define input schema
-# ====================================================
-class CustomerData(BaseModel):
-    credit_score: float
-    gender: int
-    age: int
-    tenure: int
-    balance: float
-    products_number: int
-    credit_card: int
-    active_member: int
-    estimated_salary: float
-    country: str
+# ===== Load Model =====
+MODEL_PATH = os.path.join(os.getcwd(), "model", "model.pkl")
 
-# ====================================================
-# Helper function for preprocessing
-# ====================================================
-def preprocess_input(data: CustomerData) -> pd.DataFrame:
+try:
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+    print("✅ Model loaded successfully.")
+except Exception as e:
+    print(f"❌ Error loading model: {e}")
+    model = None
+
+
+# ===== Request Schema =====
+class CustomerData(BaseModel):
+    CreditScore: float
+    Geography: str
+    Gender: str
+    Age: int
+    Tenure: int
+    Balance: float
+    NumOfProducts: int
+    HasCrCard: int
+    IsActiveMember: int
+    EstimatedSalary: float
+
+
+# ===== Helper for encoding categorical values =====
+def preprocess_input(data: CustomerData):
     df = pd.DataFrame([data.dict()])
 
-    # One-hot encode 'country' manually
-    countries = ["France", "Spain", "Germany"]
-    for c in countries:
-        df[f"country_{c}"] = 1 if data.country == c else 0
+    # Encode categorical values (assuming they were one-hot encoded during training)
+    df = pd.get_dummies(df, columns=["Geography", "Gender"], drop_first=True)
 
-    # Drop original country column
-    df = df.drop(columns=["country"], errors="ignore")
-
-    # Expected columns (must match training order)
-    expected_columns = [
-        "credit_score", "gender", "age", "tenure", "balance",
-        "products_number", "credit_card", "active_member",
-        "estimated_salary", "country_France", "country_Spain", "country_Germany"
+    # Ensure same columns as training data
+    expected_cols = [
+        'CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 
+        'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 
+        'Geography_Germany', 'Geography_Spain', 'Gender_Male'
     ]
-
-    # Ensure all columns exist
-    for col in expected_columns:
+    for col in expected_cols:
         if col not in df.columns:
             df[col] = 0
-
-    # Reorder & cast everything to float
-    df = df[expected_columns].astype(float)
+    df = df[expected_cols]
 
     return df
 
-# ====================================================
-# Prediction endpoint
-# ====================================================
+
+# ===== Prediction Endpoint =====
 @app.post("/predict")
 async def predict(data: CustomerData):
+    if model is None:
+        return {"error": "Model not loaded correctly."}
+
     try:
         processed = preprocess_input(data)
-        prediction = model.predict(processed)[0]
-
-        probability = None
-        if hasattr(model, "predict_proba"):
-            probability = float(model.predict_proba(processed)[0][1])
-
+        prediction = model.predict(processed)
+        probability = model.predict_proba(processed).tolist()[0]
         return {
-            "success": True,
-            "prediction": int(prediction),
-            "probability": probability,
-            "message": "Prediction successful"
+            "prediction": int(prediction[0]),
+            "probability": probability
         }
-
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Prediction failed due to an internal error."
-        }
+        return {"error": str(e)}
 
-# ====================================================
-# Root endpoint
-# ====================================================
+
+# ===== Root Endpoint =====
 @app.get("/")
-async def home():
-    return {"message": "Bank Customer Churn Prediction API is live!"}
+async def root():
+    return {"message": "Churn Prediction API is running 🚀"}
