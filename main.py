@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import pandas as pd
 import joblib
 import traceback
+import os
 
 # ===== Model input schema =====
 class CustomerFeatures(BaseModel):
@@ -18,22 +19,32 @@ class CustomerFeatures(BaseModel):
     gender: int
     country: str
 
-# ===== Load model and preprocessor =====
+# Debug file system
+print("Current directory:", os.getcwd())
+print("Files:", os.listdir("."))
+if os.path.exists("models"):
+    print("Models folder:", os.listdir("models"))
+
+# ===== Load model =====
 try:
-    model = joblib.load("models/model.pkl")  # Your trained model
-    preprocessor = joblib.load("models/preprocessor.pkl")  # Preprocessing pipeline
+    model = joblib.load("models/model.pkl")
     BEST_THRESHOLD = 0.57
-    print("✓ Model and preprocessor loaded successfully")
+    print("✓ Model loaded successfully")
+    
+    if hasattr(model, 'feature_names_in_'):
+        print(f"Expected features: {list(model.feature_names_in_)}")
+    if hasattr(model, 'n_features_in_'):
+        print(f"Number of features: {model.n_features_in_}")
+    
 except Exception as e:
-    print(f"✗ Error loading model/preprocessor: {e}")
+    print(f"✗ Error loading model: {e}")
+    traceback.print_exc()
     model = None
-    preprocessor = None
     BEST_THRESHOLD = 0.57
 
 # ===== FastAPI app =====
 app = FastAPI(title="Churn Prediction API", version="0.1.0")
 
-# ===== CORS =====
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -44,15 +55,19 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    return {"message": "Churn Prediction API is running!", "status": "healthy"}
+    return {
+        "message": "Churn Prediction API is running!", 
+        "status": "healthy",
+        "model_loaded": model is not None
+    }
 
 @app.post("/predict")
 def predict(features: CustomerFeatures):
-    if model is None or preprocessor is None:
-        raise HTTPException(status_code=500, detail="Model or preprocessor not loaded")
+    if model is None:
+        raise HTTPException(status_code=500, detail="Model not loaded")
 
     try:
-        # Build DataFrame in correct column order
+        # Build DataFrame with duplicate Gender column (model expects 11 features)
         X = pd.DataFrame([{
             'credit_score': features.credit_score,
             'country': features.country,
@@ -63,26 +78,26 @@ def predict(features: CustomerFeatures):
             'products_number': features.products_number,
             'credit_card': features.credit_card,
             'active_member': features.active_member,
-            'estimated_salary': features.estimated_salary
+            'estimated_salary': features.estimated_salary,
+            'Gender': features.gender  # Duplicate column with capital G
         }])
 
-        print(f"DataFrame columns: {X.columns.tolist()}")
-        print(f"DataFrame shape: {X.shape}")
+        print(f"Input columns: {X.columns.tolist()}")
+        print(f"Input shape: {X.shape}")
 
-        # Preprocess features exactly as in training
-        X_processed = preprocessor.transform(X)
-
-        # Prediction
-        proba = model.predict_proba(X_processed)[:, 1][0]
+        # Predict (model has built-in preprocessing)
+        proba = float(model.predict_proba(X)[0, 1])
         prediction = "Churn" if proba >= BEST_THRESHOLD else "Not Churn"
+
+        print(f"✓ Prediction: {prediction} ({proba:.3f})")
 
         return {
             "prediction": prediction,
-            "churn_probability": round(float(proba), 3),
+            "churn_probability": round(proba, 3),
             "threshold": BEST_THRESHOLD
         }
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"✗ Error: {str(e)}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
