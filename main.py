@@ -5,30 +5,37 @@ import pandas as pd
 import joblib
 import numpy as np
 
-# Define input schema
 class CustomerFeatures(BaseModel):
-    credit_score: int = Field(..., ge=300, le=850)
-    age: int = Field(..., ge=18, le=100)
-    tenure: int = Field(..., ge=0, le=10)
-    balance: float = Field(..., ge=0)
-    products_number: int = Field(..., ge=1, le=4)
-    credit_card: int = Field(..., ge=0, le=1)
-    active_member: int = Field(..., ge=0, le=1)
-    estimated_salary: float = Field(..., ge=0)
-    gender: int = Field(..., ge=0, le=1)
+    credit_score: int
+    age: int
+    tenure: int
+    balance: float
+    products_number: int
+    credit_card: int
+    active_member: int
+    estimated_salary: float
+    gender: int
     country: str
 
-# Load model
 try:
     model = joblib.load("models/model.pkl")
     BEST_THRESHOLD = 0.57
-    print("✓ Model loaded successfully")
+    print("✓ Model loaded")
+    print(f"Model type: {type(model)}")
+    print(f"Model attributes: {dir(model)}")
+    
+    # Try to get feature names if available
+    if hasattr(model, 'feature_names_in_'):
+        print(f"Expected features: {model.feature_names_in_}")
+    if hasattr(model, 'n_features_in_'):
+        print(f"Number of features: {model.n_features_in_}")
+        
 except Exception as e:
-    print(f"✗ Error loading model: {e}")
+    print(f"✗ Error: {e}")
     model = None
     BEST_THRESHOLD = 0.57
 
-app = FastAPI(title="Churn Prediction API", version="0.1.0")
+app = FastAPI(title="Churn Prediction API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,7 +47,7 @@ app.add_middleware(
 
 @app.get("/")
 def home():
-    return {"message": "Churn Prediction API is running!", "status": "healthy"}
+    return {"message": "Churn Prediction API is running!"}
 
 @app.post("/predict")
 def predict(features: CustomerFeatures):
@@ -48,36 +55,54 @@ def predict(features: CustomerFeatures):
         raise HTTPException(status_code=500, detail="Model not loaded")
     
     try:
-        # Build DataFrame with explicit types
-        data = {
-            'credit_score': np.int64(features.credit_score),
-            'age': np.int64(features.age),
-            'tenure': np.int64(features.tenure),
-            'balance': np.float64(features.balance),
-            'products_number': np.int64(features.products_number),
-            'credit_card': np.int64(features.credit_card),
-            'active_member': np.int64(features.active_member),
-            'estimated_salary': np.float64(features.estimated_salary),
-            'gender': np.int64(features.gender),
+        # Create DataFrame - try both ways
+        print("\n=== ATTEMPTING PREDICTION ===")
+        
+        # Method 1: Direct dict
+        data_dict = {
+            'credit_score': features.credit_score,
+            'gender': features.gender,
+            'age': features.age,
+            'tenure': features.tenure,
+            'balance': features.balance,
+            'products_number': features.products_number,
+            'credit_card': features.credit_card,
+            'active_member': features.active_member,
+            'estimated_salary': features.estimated_salary,
             'country': features.country
         }
         
-        X = pd.DataFrame([data])
+        print(f"Input dict: {data_dict}")
         
-        print(f"DataFrame dtypes: {X.dtypes.to_dict()}")
+        X = pd.DataFrame([data_dict])
         
-        # Predict
-        proba = float(model.predict_proba(X)[0, 1])
-        prediction = "Churn" if proba >= BEST_THRESHOLD else "Not Churn"
+        print(f"DataFrame shape: {X.shape}")
+        print(f"DataFrame columns: {X.columns.tolist()}")
+        print(f"DataFrame dtypes:\n{X.dtypes}")
+        print(f"DataFrame values:\n{X.values}")
+        print(f"DataFrame info:\n{X.info()}")
+        
+        # Try prediction
+        print("\nAttempting predict_proba...")
+        proba = model.predict_proba(X)
+        print(f"Prediction successful! Proba shape: {proba.shape}")
+        
+        proba_value = float(proba[0, 1])
+        prediction = "Churn" if proba_value >= BEST_THRESHOLD else "Not Churn"
         
         return {
             "prediction": prediction,
-            "churn_probability": round(proba, 3),
+            "churn_probability": round(proba_value, 3),
             "threshold": BEST_THRESHOLD
         }
         
     except Exception as e:
-        print(f"ERROR: {str(e)}")
+        print(f"\n=== ERROR OCCURRED ===")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        full_trace = traceback.format_exc()
+        print(f"Full traceback:\n{full_trace}")
+        
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
