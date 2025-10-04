@@ -20,7 +20,7 @@ const Results = ({ prediction }) => {
 
   if (prediction.error) {
     return (
-      <div className="max-w-xl mx-auto bg-red-900 border border-red-700 text-red-200 p-6 rounded-2xl shadow-xl mt-10">
+      <div className="max-w-xl mx-4 md:mx-auto bg-red-900 border border-red-700 text-red-200 p-6 rounded-2xl shadow-xl mt-10">
         <h2 className="text-2xl font-bold mb-4">Error</h2>
         <p className="mb-6">{prediction.error}</p>
         <button
