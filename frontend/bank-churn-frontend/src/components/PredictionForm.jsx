@@ -26,64 +26,56 @@ export default function PredictionForm({ setPrediction }) {
   const validate = (values) => {
     const e = {};
     
-    // Credit score validation
+    // Credit score validation - only required, no range limits
     if (!values.credit_score || values.credit_score === "") {
       e.credit_score = "Required";
-    } else if (Number(values.credit_score) < 300 || Number(values.credit_score) > 850) {
-      e.credit_score = "Must be between 300-850";
     }
     
-    // Gender validation
+    // Gender validation - must select valid option
     if (values.gender !== "Male" && values.gender !== "Female") {
       e.gender = "Select gender";
     }
     
-    // Age validation
+    // Age validation - only required, no range limits
     if (!values.age || values.age === "") {
       e.age = "Required";
-    } else if (Number(values.age) < 18 || Number(values.age) > 100) {
-      e.age = "Must be between 18-100";
     }
     
-    // Tenure validation
+    // Tenure validation - only required, no range limits
     if (values.tenure === "") {
       e.tenure = "Required";
-    } else if (Number(values.tenure) < 0 || Number(values.tenure) > 10) {
-      e.tenure = "Must be between 0-10";
     }
     
-    // Balance validation
+    // Balance validation - required and must be non-negative (can't have negative balance)
     if (values.balance === "") {
       e.balance = "Required";
     } else if (Number(values.balance) < 0) {
-      e.balance = "Must be positive";
+      e.balance = "Cannot be negative";
     }
     
-    // Products number validation
+    // Products number validation - only required, no range limits
     if (values.products_number === "") {
       e.products_number = "Required";
-    } else if (Number(values.products_number) < 1 || Number(values.products_number) > 4) {
-      e.products_number = "Must be between 1-4";
     }
     
-    // Credit card validation
+    // Credit card validation - must select valid option
     if (values.credit_card !== "0" && values.credit_card !== "1") {
       e.credit_card = "Select an option";
     }
     
-    // Active member validation
+    // Active member validation - must select valid option
     if (values.active_member !== "0" && values.active_member !== "1") {
       e.active_member = "Select an option";
     }
     
-    // Estimated salary validation
+    // Estimated salary validation - required and must be non-negative
     if (values.estimated_salary === "") {
       e.estimated_salary = "Required";
     } else if (Number(values.estimated_salary) < 0) {
-      e.estimated_salary = "Must be positive";
+      e.estimated_salary = "Cannot be negative";
     }
     
-    // Country validation
+    // Country validation - must select valid option
     if (!values.country || values.country === "") {
       e.country = "Select country";
     }
@@ -101,7 +93,7 @@ export default function PredictionForm({ setPrediction }) {
   const buildPayload = (values) => ({
     credit_score: parseFloat(values.credit_score),
     country: values.country,
-    gender: values.gender, // Send as string "Male" or "Female"
+    gender: values.gender,
     age: parseInt(values.age, 10),
     tenure: parseInt(values.tenure, 10),
     balance: parseFloat(values.balance),
@@ -131,13 +123,12 @@ export default function PredictionForm({ setPrediction }) {
 
     setLoading(true);
     try {
-      // First, wake up the server (important for Render free tier)
       console.log("Waking up server...");
       await wakeUpServer();
       console.log("Server ready, sending prediction request...");
       
       const data = await predictChurn(payload);
-      console.log("Received data:", data); // Debug log
+      console.log("Received data:", data);
 
       if (typeof setPrediction === "function") {
         setPrediction(data);
@@ -146,7 +137,7 @@ export default function PredictionForm({ setPrediction }) {
         setLocalResult(data);
       }
     } catch (err) {
-      console.error("Prediction error:", err); // Debug log
+      console.error("Prediction error:", err);
       const msg = err?.message || "Unable to get prediction. Please try again.";
       setServerError(msg);
       if (typeof setPrediction === "function") {
@@ -166,7 +157,7 @@ export default function PredictionForm({ setPrediction }) {
   };
 
   return (
-    <div className="max-w-4xl mx-4 md:mx-auto  bg-black border border-yellow-600 shadow-xl rounded-2xl  p-6 md:p-10 mt-10">
+    <div className="max-w-4xl mx-4 md:mx-auto bg-black border border-yellow-600 shadow-xl rounded-2xl p-6 md:p-10 mt-10">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-yellow-500">
           Bank Customer Churn Prediction
@@ -186,7 +177,7 @@ export default function PredictionForm({ setPrediction }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-2  md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Input 
           label="Credit Score" 
           name="credit_score" 
@@ -194,8 +185,6 @@ export default function PredictionForm({ setPrediction }) {
           onChange={handleChange} 
           type="number" 
           error={errors.credit_score}
-          min="300"
-          max="850"
           placeholder="e.g., 650"
         />
         <Select 
@@ -217,8 +206,6 @@ export default function PredictionForm({ setPrediction }) {
           onChange={handleChange} 
           type="number" 
           error={errors.age}
-          min="18"
-          max="100"
           placeholder="e.g., 35"
         />
         <Input 
@@ -228,8 +215,6 @@ export default function PredictionForm({ setPrediction }) {
           onChange={handleChange} 
           type="number" 
           error={errors.tenure}
-          min="0"
-          max="10"
           placeholder="e.g., 5"
         />
         <Input 
@@ -250,8 +235,6 @@ export default function PredictionForm({ setPrediction }) {
           onChange={handleChange} 
           type="number" 
           error={errors.products_number}
-          min="1"
-          max="4"
           placeholder="e.g., 2"
         />
         <Select 
@@ -304,7 +287,7 @@ export default function PredictionForm({ setPrediction }) {
           error={errors.country} 
           className="md:col-span-2" 
         />
-        <div className="col-span-2 flex md:flex-row items-center justify-between gap-4 mt-6">
+        <div className="col-span-1 md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
           <button 
             type="submit" 
             disabled={loading} 
