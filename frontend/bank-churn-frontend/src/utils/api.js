@@ -1,7 +1,7 @@
 // Use CORS proxy if direct connection fails
 const USE_PROXY = false; // Set to true if CORS issues persist
 const PROXY_URL = "https://corsproxy.io/?";
-const DIRECT_URL = import.meta.env.VITE_API_URL || "https://bank-customer-churn-fastapi.onrender.com";
+const DIRECT_URL = (import.meta.env.VITE_API_URL || "https://bank-customer-churn-fastapi.onrender.com").replace(/\/$/, '');
 const API_URL = USE_PROXY ? PROXY_URL + encodeURIComponent(DIRECT_URL) : DIRECT_URL;
 
 export async function predictChurn(customerData, { signal, timeout = 60000 } = {}) {
@@ -61,17 +61,28 @@ export async function predictChurn(customerData, { signal, timeout = 60000 } = {
     const data = await res.json();
     
     // Validate response structure
-    if (!data || typeof data.prediction === 'undefined' || !Array.isArray(data.probability)) {
+    if (!data || typeof data.prediction === 'undefined' || typeof data.probability === 'undefined') {
       throw new Error("Invalid response format from server");
     }
 
     // Transform backend response to match frontend expectations
     // Backend returns: { prediction: 0/1, probability: [prob_no_churn, prob_churn] }
     // Frontend expects: { prediction: "No Churn"/"Churn", churn_probability: number, threshold: number }
+    
+    // Handle probability as either array or number
+    let churnProb;
+    if (Array.isArray(data.probability)) {
+      // If array, take the second element (probability of churn/positive class)
+      churnProb = data.probability[1];
+    } else {
+      // If single number, use it directly
+      churnProb = data.probability;
+    }
+
     const transformedData = {
       prediction: data.prediction === 1 ? "Churn" : "No Churn",
-      churn_probability: data.probability[1], // Probability of churn (second element)
-      threshold: 0.57 // Fixed threshold used by your model
+      churn_probability: churnProb, // Probability of churn
+      threshold: data.threshold || 0.57 // Threshold from backend or default
     };
 
     return transformedData;
